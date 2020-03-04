@@ -41,15 +41,15 @@ time_t steady_clock_to_time_t(steady_clock::time_point t)
 }
 */
 
-CountMinSketch::CountMinSketch(UsageType usageType, double delta, double epsilon, int64_t point_V, int64_t topk_K, double heavy_F, time_t seed)
+CountMinSketch::CountMinSketch(UsageType usageType, double delta, double epsilon, int64_t point_v, int64_t topk_k, double heavy_f, time_t seed)
 {
 	timestamp = chrono::high_resolution_clock::now();
 
 	builder.setDelta(delta);
 	builder.setEpsilon(epsilon);
-	builder.setPointV(point_V);
-	builder.setTopkK(topk_K);
-	builder.setHeavyF(heavy_F);
+	builder.setPointV(point_v);
+	builder.setTopkK(topk_k);
+	builder.setHeavyF(heavy_f);
 	builder.setD((int64_t)ceil(log(1.0 / delta)));
 	builder.setW((int64_t)ceil(exp(1.0) / epsilon));
 	builder.setPrime(pow(2, 31) - 1); // 2^31 - 1
@@ -76,43 +76,43 @@ CountMinSketch::CountMinSketch(UsageType usageType, double delta, double epsilon
 		for (long unsigned int j = 0; j < w; j++)
 			estimators.set(i * w + j, 0);
 
-	auto topkFrequencies = builder.initTopkFrequencies(topk_K);
-	auto topkValues = builder.initTopkValues(topk_K);
-	auto topkFrequenciesPrevious = builder.initTopkFrequenciesPrevious(topk_K);
-	auto topkValuesPrevious = builder.initTopkValuesPrevious(topk_K);
-	for (capnp::uint i = 0; i < topk_K; i++)
+	auto topkFrequencies = builder.initTopkFrequencies(topk_k);
+	auto topkValues = builder.initTopkValues(topk_k);
+	auto topkFrequenciesPrevious = builder.initTopkFrequenciesPrevious(topk_k);
+	auto topkValuesPrevious = builder.initTopkValuesPrevious(topk_k);
+	for (capnp::uint i = 0; i < topk_k; i++)
 	{
-		topkValues[i].setRank(topk_K - i);
+		topkValues[i].setRank(topk_k - i);
 		topkValues[i].setFrequency(0);
 		topkValues[i].setValue(0);
 		topkValues[i].setPayload("");
-		topkFrequencies[i].setRank(topk_K - i);
+		topkFrequencies[i].setRank(topk_k - i);
 		topkFrequencies[i].setFrequency(0);
 		topkFrequencies[i].setValue(0);
 		topkFrequencies[i].setPayload("");
-		topkValuesPrevious[i].setRank(topk_K - i);
+		topkValuesPrevious[i].setRank(topk_k - i);
 		topkValuesPrevious[i].setFrequency(0);
 		topkValuesPrevious[i].setValue(0);
 		topkValuesPrevious[i].setPayload("");
-		topkFrequenciesPrevious[i].setRank(topk_K - i);
+		topkFrequenciesPrevious[i].setRank(topk_k - i);
 		topkFrequenciesPrevious[i].setFrequency(0);
 		topkFrequenciesPrevious[i].setValue(0);
 		topkFrequenciesPrevious[i].setPayload("");
 	}
 
-	for (int i = 0; i < topk_K; i++)
+	for (int i = 0; i < topk_k; i++)
 	{
-		deltaRanks.push_back(numeric_limits<double>::quiet_NaN());
-		deltaFrequencies.push_back(0);
+		delta_ranks.push_back(numeric_limits<double>::quiet_NaN());
+		delta_frequencies.push_back(0);
 	}
 }
 
 // Creates a READER copy of the sketch, i.e., we're not allowed to manipulate this copied object.
-CountMinSketch::CountMinSketch(const CountMinSketch &other, capnp::MallocMessageBuilder &newBuilder)
+CountMinSketch::CountMinSketch(const CountMinSketch &other, capnp::MallocMessageBuilder &new_builder)
 {
 	timestamp = other.timestamp;
-	newBuilder.setRoot(other.reader);
-	reader = newBuilder.getRoot<CMS>();
+	new_builder.setRoot(other.reader);
+	reader = new_builder.getRoot<CMS>();
 }
 
 ostream &operator<<(ostream &os, CountMinSketch &c)
@@ -164,9 +164,9 @@ ostream &operator<<(ostream &os, CountMinSketch &c)
 	}
 
 	// TODO: Not sure about the following:
-	// Make sure the top-k arrays are sorted before we showComparison them to anyone.
-	//c.sortTopkValues(c.builder.getTopkValues(), c.builder.getTopkN());
-	//c.sortTopkFrequencies(c.builder.getTopkFrequencies(), c.builder.getTopkN());
+	// Make sure the top-k arrays are sorted before we show_comparison them to anyone.
+	//c.sort_topk_values(c.builder.getTopkValues(), c.builder.getTopkN());
+	//c.sort_topk_frequencies(c.builder.getTopkFrequencies(), c.builder.getTopkN());
 
 	os << "TOP-K FREQUENCIES:" << endl;
 	os << right << setw(20) << "k:" << right << setw(20) << "value:" << setw(20) << "frequency:"
@@ -196,7 +196,7 @@ struct Item
 	string payload;
 };
 
-int64_t CountMinSketch::estimatorHash(int64_t value, int64_t index)
+int64_t CountMinSketch::estimator_hash(int64_t value, int64_t index)
 {
 	// Make sure that we do NOT return a NEGATIVE number.  That's why we make the computations unsigned
 	auto a = (uint64_t)builder.getA()[index];
@@ -207,14 +207,14 @@ int64_t CountMinSketch::estimatorHash(int64_t value, int64_t index)
 	return ((a * value + b) % p) % w;
 }
 
-int64_t CountMinSketch::findInValuesV(capnp::List<TopkValue, capnp::Kind::STRUCT>::Builder values, int64_t keyValue, int64_t min, int64_t max)
+int64_t CountMinSketch::find_in_Values_v(capnp::List<TopkValue, capnp::Kind::STRUCT>::Builder values, int64_t key_value, int64_t min, int64_t max)
 {
 	while (min <= max)
 	{
 		int64_t middle = min + ((max - min) / 2);
-		if (values[middle].getValue() == keyValue)
+		if (values[middle].getValue() == key_value)
 			return middle;
-		else if (values[middle].getValue() < keyValue)
+		else if (values[middle].getValue() < key_value)
 			min = middle + 1;
 		else
 			max = middle - 1;
@@ -224,15 +224,15 @@ int64_t CountMinSketch::findInValuesV(capnp::List<TopkValue, capnp::Kind::STRUCT
 	return -1;
 }
 
-int64_t CountMinSketch::findInValuesVF(capnp::List<TopkValue, capnp::Kind::STRUCT>::Builder values, int64_t keyValue, int64_t keyFrequency, int64_t min, int64_t max)
+int64_t CountMinSketch::find_in_Values_v_f(capnp::List<TopkValue, capnp::Kind::STRUCT>::Builder values, int64_t key_value, int64_t keyFrequency, int64_t min, int64_t max)
 {
 	while (min <= max)
 	{
 		int64_t middle = min + ((max - min) / 2);
-		if (values[middle].getValue() == keyValue && values[middle].getFrequency() == keyFrequency)
+		if (values[middle].getValue() == key_value && values[middle].getFrequency() == keyFrequency)
 			return middle;
-		else if ((values[middle].getValue() < keyValue) ||
-				 (values[middle].getValue() == keyValue && values[middle].getFrequency() < keyFrequency))
+		else if ((values[middle].getValue() < key_value) ||
+				 (values[middle].getValue() == key_value && values[middle].getFrequency() < keyFrequency))
 			min = middle + 1;
 		else
 			max = middle - 1;
@@ -246,15 +246,15 @@ int64_t CountMinSketch::findInValuesVF(capnp::List<TopkValue, capnp::Kind::STRUC
 	return -1;
 }
 
-int64_t CountMinSketch::findInFrequenciesFV(capnp::List<TopkFrequency, capnp::Kind::STRUCT>::Builder frequencies, int64_t keyFrequency, int64_t keyValue, int64_t min, int64_t max)
+int64_t CountMinSketch::find_in_frequencies_f_v(capnp::List<TopkFrequency, capnp::Kind::STRUCT>::Builder frequencies, int64_t keyFrequency, int64_t key_value, int64_t min, int64_t max)
 {
 	while (min <= max)
 	{
 		int64_t middle = min + ((max - min) / 2);
-		if (frequencies[middle].getFrequency() == keyFrequency && frequencies[middle].getValue() == keyValue)
+		if (frequencies[middle].getFrequency() == keyFrequency && frequencies[middle].getValue() == key_value)
 			return middle;
 		else if ((frequencies[middle].getFrequency() < keyFrequency) ||
-				 (frequencies[middle].getFrequency() == keyFrequency && frequencies[middle].getValue() < keyValue))
+				 (frequencies[middle].getFrequency() == keyFrequency && frequencies[middle].getValue() < key_value))
 			min = middle + 1;
 		else
 			max = middle - 1;
@@ -264,12 +264,12 @@ int64_t CountMinSketch::findInFrequenciesFV(capnp::List<TopkFrequency, capnp::Ki
 	return -1;
 }
 
-void CountMinSketch::updateTopk(int64_t value, int64_t estimatedFrequency, string payload)
+void CountMinSketch::update_topk(int64_t value, int64_t estimated_frequency, string payload)
 {
 	const auto k = builder.getTopkK();
 	const auto n = builder.getTopkN();
 	const auto usageType = builder.getUsageType();
-	const int64_t i_v = findInValuesV(builder.getTopkValues(), value, 0, n - 1);
+	const int64_t i_v = find_in_Values_v(builder.getTopkValues(), value, 0, n - 1);
 	if (i_v != -1) // Value found
 	{
 		// Update with new frequency information
@@ -278,12 +278,12 @@ void CountMinSketch::updateTopk(int64_t value, int64_t estimatedFrequency, strin
 			const auto frequencyOld = builder.getTopkValues()[i_v].getFrequency();
 
 			// Find the entry in the other array
-			const auto i_f = findInFrequenciesFV(builder.getTopkFrequencies(), frequencyOld, value, 0, n - 1);
+			const auto i_f = find_in_frequencies_f_v(builder.getTopkFrequencies(), frequencyOld, value, 0, n - 1);
 
 			assert(i_f != -1);
 
-			builder.getTopkFrequencies()[i_f].setFrequency(estimatedFrequency);
-			builder.getTopkValues()[i_v].setFrequency(estimatedFrequency);
+			builder.getTopkFrequencies()[i_f].setFrequency(estimated_frequency);
+			builder.getTopkValues()[i_v].setFrequency(estimated_frequency);
 		}
 	}
 	else // Value not found
@@ -294,10 +294,10 @@ void CountMinSketch::updateTopk(int64_t value, int64_t estimatedFrequency, strin
 			{
 				// Append the new element to the current end of both arrays
 				builder.getTopkValues()[n].setValue(value);
-				builder.getTopkValues()[n].setFrequency(estimatedFrequency);
+				builder.getTopkValues()[n].setFrequency(estimated_frequency);
 				builder.getTopkValues()[n].setPayload(payload);
 				builder.getTopkFrequencies()[n].setValue(value);
-				builder.getTopkFrequencies()[n].setFrequency(estimatedFrequency);
+				builder.getTopkFrequencies()[n].setFrequency(estimated_frequency);
 				builder.getTopkFrequencies()[n].setPayload(payload);
 
 				// Maintain the volume of the data structures
@@ -305,20 +305,20 @@ void CountMinSketch::updateTopk(int64_t value, int64_t estimatedFrequency, strin
 			}
 			// If the lowest frequent top-k element has a frequency that is lower than the new value, replace it in both arrays.
 			// The arrays are in ascending order, so the smallest frequency is "on the left", i.e, at index 0.
-			else if (builder.getTopkFrequencies()[0].getFrequency() < estimatedFrequency)
+			else if (builder.getTopkFrequencies()[0].getFrequency() < estimated_frequency)
 			{
 				const auto f = builder.getTopkFrequencies()[0].getFrequency();
 				const auto v = builder.getTopkFrequencies()[0].getValue();
 
-				const auto i_v = findInValuesVF(builder.getTopkValues(), v, f, 0, n - 1);
+				const auto i_v = find_in_Values_v_f(builder.getTopkValues(), v, f, 0, n - 1);
 				// TODO:  I've seen it happen that this assertion was violated (with a Zipf dataset).  How was this possible?  More testing needed!
 				assert(i_v != -1);
 
 				builder.getTopkValues()[i_v].setValue(value);
-				builder.getTopkValues()[i_v].setFrequency(estimatedFrequency);
+				builder.getTopkValues()[i_v].setFrequency(estimated_frequency);
 				builder.getTopkValues()[i_v].setPayload(payload);
 				builder.getTopkFrequencies()[0].setValue(value);
-				builder.getTopkFrequencies()[0].setFrequency(estimatedFrequency);
+				builder.getTopkFrequencies()[0].setFrequency(estimated_frequency);
 				builder.getTopkFrequencies()[0].setPayload(payload);
 			}
 			else
@@ -335,8 +335,8 @@ void CountMinSketch::updateTopk(int64_t value, int64_t estimatedFrequency, strin
 			//  Heap should be periodically or continuously cleaned up to remove elements that do not meet the threshold anymore.
 			//    At least before we return the result in the final() function, we must go through the heap and remove all
 			//    elements that are not frequent enough.
-			// 	if (estimated_frequency >= state.rows_n * state.heavy_F)
-			if (estimatedFrequency >= n * builder.getHeavyF())
+			// 	if (estimated_frequency >= state.rows_n * state.heavy_f)
+			if (estimated_frequency >= n * builder.getHeavyF())
 			{
 				// Create an array that has 1 element more space than the existing one.
 				auto oldFrequencies = builder.getTopkFrequencies();
@@ -356,10 +356,10 @@ void CountMinSketch::updateTopk(int64_t value, int64_t estimatedFrequency, strin
 
 				// Append new value at the end
 				topkFrequencies[i].setValue(value);
-				topkFrequencies[i].setFrequency(estimatedFrequency);
+				topkFrequencies[i].setFrequency(estimated_frequency);
 				topkFrequencies[i].setPayload(payload);
 				topkValues[i].setValue(value);
-				topkValues[i].setFrequency(estimatedFrequency);
+				topkValues[i].setFrequency(estimated_frequency);
 				topkValues[i].setPayload(payload);
 
 				builder.setTopkN(n + 1);
@@ -375,19 +375,19 @@ void CountMinSketch::updateTopk(int64_t value, int64_t estimatedFrequency, strin
 	// Adjust the top-k arrays
 	if (usageType == UsageType::TOPK || usageType == UsageType::HEAVY)
 	{
-		sortTopkValues(builder.getTopkValues(), builder.getTopkN());
-		sortTopkFrequencies(builder.getTopkFrequencies(), builder.getTopkN());
+		sort_topk_values(builder.getTopkValues(), builder.getTopkN());
+		sort_topk_frequencies(builder.getTopkFrequencies(), builder.getTopkN());
 	}
 }
 
-int64_t CountMinSketch::estimateFrequency(int64_t value)
+int64_t CountMinSketch::estimate_frequency(int64_t value)
 {
 	int64_t minimum = LLONG_MAX;
 	const auto d = (int64_t)builder.getD();
 	const auto w = builder.getW();
 	for (int64_t i = 0; i < d; i++)
 	{
-		auto h = estimatorHash(value, i);
+		auto h = estimator_hash(value, i);
 		auto index = i * w + h;
 		minimum = min(minimum, (int64_t)builder.getEstimators()[index]);
 	}
@@ -404,7 +404,7 @@ void CountMinSketch::add(int64_t value, string payload)
 	auto estimators = builder.getEstimators();
 	for (uint64_t i = 0; i < d; i++)
 	{
-		auto hash = estimatorHash(value, i);
+		auto hash = estimator_hash(value, i);
 		auto index = w * i + hash;
 		const auto prevEstimate = estimators[index];
 		estimators.set(index, prevEstimate + 1);
@@ -413,7 +413,7 @@ void CountMinSketch::add(int64_t value, string payload)
 	const auto usageType = builder.getUsageType();
 	if (usageType == UsageType::TOPK || usageType == UsageType::HEAVY)
 	{
-		updateTopk(value, estimateFrequency(value), payload);
+		update_topk(value, estimate_frequency(value), payload);
 	}
 }
 
@@ -464,12 +464,12 @@ void readBook(CountMinSketch &sketch)
 	in.close();
 }
 
-void CountMinSketch::sortTopkValues(capnp::List<TopkValue, capnp::Kind::STRUCT>::Builder top, int actualLength)
+void CountMinSketch::sort_topk_values(capnp::List<TopkValue, capnp::Kind::STRUCT>::Builder top, int actual_length)
 {
 	// Copy original Capnp list to a temporary STL-type list.
 	list<Item> tmp;
 	auto iter = top.begin();
-	for (int i = 0; i < actualLength; i++, iter++)
+	for (int i = 0; i < actual_length; i++, iter++)
 	{
 		Item item;
 		item.frequency = top[i].getFrequency();
@@ -497,12 +497,12 @@ void CountMinSketch::sortTopkValues(capnp::List<TopkValue, capnp::Kind::STRUCT>:
 	}
 }
 
-void CountMinSketch::sortTopkFrequencies(capnp::List<TopkFrequency, capnp::Kind::STRUCT>::Builder top, int actualLength)
+void CountMinSketch::sort_topk_frequencies(capnp::List<TopkFrequency, capnp::Kind::STRUCT>::Builder top, int actual_length)
 {
 	// Copy original Capnp list to a temporary STL-type list.
 	list<Item> tmp;
 	auto iter = top.begin();
-	for (int i = 0; i < actualLength; i++, iter++)
+	for (int i = 0; i < actual_length; i++, iter++)
 	{
 		Item item;
 		item.frequency = top[i].getFrequency();
@@ -530,7 +530,7 @@ void CountMinSketch::sortTopkFrequencies(capnp::List<TopkFrequency, capnp::Kind:
 	}
 }
 
-void CountMinSketch::showComparison()
+void CountMinSketch::show_comparison()
 {
 	const auto n = reader.getTopkN();
 	const auto dt = ((double)elapsed_nanoseconds) / 1e9;
@@ -538,8 +538,8 @@ void CountMinSketch::showComparison()
 	cout << right << setw(20) << "k:" << right << setw(20) << "dr = diff(rank):" << setw(20) << "df = diff(freq):" << setw(20) << "df/dt = velocity" << endl;
 	for (int64_t i = n - 1; i >= 0; i--)
 	{
-		const auto dr = deltaRanks[i];
-		const auto df = deltaFrequencies[i];
+		const auto dr = delta_ranks[i];
+		const auto df = delta_frequencies[i];
 		const auto df_dt = ((double)df) / dt;
 		cout << right << setw(20) << n - i << right << setw(20) << setprecision(0) << dr << setw(20) << setprecision(5) << df << setw(20) << fixed << setprecision(1) << df_dt << endl;
 	}
@@ -547,7 +547,7 @@ void CountMinSketch::showComparison()
 
 void CountMinSketch::compare(CountMinSketch &other)
 {
-	previousTimestamp = timestamp;
+	previous_timestamp = timestamp;
 	timestamp = chrono::high_resolution_clock::now();
 	elapsed_nanoseconds = chrono::duration_cast<chrono::nanoseconds>(timestamp - other.timestamp).count();
 
@@ -556,26 +556,26 @@ void CountMinSketch::compare(CountMinSketch &other)
 	//
 	// Compute the changes in ranks for the current top-k items.
 	//
-	auto currentFrequencies = builder.getTopkFrequencies();
-	auto previousFrequencies = other.builder.getTopkFrequencies();
+	auto current_frequencies = builder.getTopkFrequencies();
+	auto previous_frequencies = other.builder.getTopkFrequencies();
 	int i = 0;
-	for (auto curr : currentFrequencies)
+	for (auto curr : current_frequencies)
 	{
 		const auto currValue = curr.getValue();
-		for (auto prev : previousFrequencies)
+		for (auto prev : previous_frequencies)
 		{
 			const auto prevValue = prev.getValue();
 			if (currValue == prevValue)
 			{
 				// We found the value.  If we didn't the value will remain NaN.
-				deltaRanks[i] = curr.getRank() - prev.getRank();
+				delta_ranks[i] = curr.getRank() - prev.getRank();
 			}
 		}
 		i++;
 	}
 
 	i = 0;
-	for (auto curr : currentFrequencies)
+	for (auto curr : current_frequencies)
 	{
 		//const auto curr = curr.getFrequency(); //curr.getValue();
 		const auto currFrequency = curr.getFrequency();
@@ -583,7 +583,7 @@ void CountMinSketch::compare(CountMinSketch &other)
 
 		// TODO:  Check if the value existed in the previous top-k list.  If yes, use this actual value, otherwise use an estimate.
 		int64_t prevFrequency = -1;
-		for (auto prev : previousFrequencies)
+		for (auto prev : previous_frequencies)
 		{
 			const auto prevValue = prev.getValue();
 			if (currValue == prevValue)
@@ -593,28 +593,28 @@ void CountMinSketch::compare(CountMinSketch &other)
 			}
 		}
 		if (prevFrequency == -1) // Not found in the previous top-k list.
-			prevFrequency = estimateFrequency(curr.getValue());
+			prevFrequency = estimate_frequency(curr.getValue());
 
-		deltaFrequencies[i] = currFrequency - prevFrequency;
+		delta_frequencies[i] = currFrequency - prevFrequency;
 		i++;
 	}
 
 	// //
 	// // Memorize the previous state
 	// //
-	// currentFrequencies = builder.getTopkFrequencies();
-	// previousFrequencies = other.builder.getTopkFrequencies();
+	// current_frequencies = builder.getTopkFrequencies();
+	// previous_frequencies = other.builder.getTopkFrequencies();
 	// cout << 2001 << endl;
-	// cout << currentFrequencies.size() << endl;
-	// cout << previousFrequencies.size() << endl;
+	// cout << current_frequencies.size() << endl;
+	// cout << previous_frequencies.size() << endl;
 	// cout.flush();
 	// i = 0;
-	// for (auto curr : currentFrequencies)
+	// for (auto curr : current_frequencies)
 	// {
-	//     previousFrequencies[i].setFrequency(curr.getFrequency());
-	//     previousFrequencies[i].setRank(curr.getRank());
-	//     previousFrequencies[i].setValue(curr.getValue());
-	//     previousFrequencies[i].setPayload(curr.getPayload());
+	//     previous_frequencies[i].setFrequency(curr.getFrequency());
+	//     previous_frequencies[i].setRank(curr.getRank());
+	//     previous_frequencies[i].setValue(curr.getValue());
+	//     previous_frequencies[i].setPayload(curr.getPayload());
 	//     i++;
 	// }
 	// auto currentValues = builder.getTopkValues();
@@ -632,33 +632,33 @@ void CountMinSketch::compare(CountMinSketch &other)
 
 void CountMinSketch::snapshot()
 {
-	previousTimestamp = timestamp;
+	previous_timestamp = timestamp;
 	timestamp = chrono::high_resolution_clock::now();
-	elapsed_nanoseconds = chrono::duration_cast<chrono::nanoseconds>(timestamp - previousTimestamp).count();
+	elapsed_nanoseconds = chrono::duration_cast<chrono::nanoseconds>(timestamp - previous_timestamp).count();
 
 	//
 	// Compute the changes in ranks for the current top-k items.
 	//
-	auto currentFrequencies = builder.getTopkFrequencies();
-	auto previousFrequencies = builder.getTopkFrequenciesPrevious();
+	auto current_frequencies = builder.getTopkFrequencies();
+	auto previous_frequencies = builder.getTopkFrequenciesPrevious();
 	int i = 0;
-	for (auto curr : currentFrequencies)
+	for (auto curr : current_frequencies)
 	{
 		const auto currValue = curr.getValue();
-		for (auto prev : previousFrequencies)
+		for (auto prev : previous_frequencies)
 		{
 			const auto prevValue = prev.getValue();
 			if (currValue == prevValue)
 			{
 				// We found the value.  If we didn't the value will remain NaN.
-				deltaRanks[i] = curr.getRank() - prev.getRank();
+				delta_ranks[i] = curr.getRank() - prev.getRank();
 			}
 		}
 		i++;
 	}
 
 	i = 0;
-	for (auto curr : currentFrequencies)
+	for (auto curr : current_frequencies)
 	{
 		//const auto curr = curr.getFrequency(); //curr.getValue();
 		const auto currFrequency = curr.getFrequency();
@@ -666,7 +666,7 @@ void CountMinSketch::snapshot()
 
 		// TODO:  Check if the value existed in the previous top-k list.  If yes, use this actual value, otherwise use an estimate.
 		int64_t prevFrequency = -1;
-		for (auto prev : previousFrequencies)
+		for (auto prev : previous_frequencies)
 		{
 			const auto prevValue = prev.getValue();
 			if (currValue == prevValue)
@@ -676,24 +676,24 @@ void CountMinSketch::snapshot()
 			}
 		}
 		if (prevFrequency == -1) // Not found in the previous top-k list.
-			prevFrequency = estimateFrequency(curr.getValue());
+			prevFrequency = estimate_frequency(curr.getValue());
 
-		deltaFrequencies[i] = currFrequency - prevFrequency;
+		delta_frequencies[i] = currFrequency - prevFrequency;
 		i++;
 	}
 
 	//
 	// Memorize the previous state
 	//
-	currentFrequencies = builder.getTopkFrequencies();
-	previousFrequencies = builder.getTopkFrequenciesPrevious();
+	current_frequencies = builder.getTopkFrequencies();
+	previous_frequencies = builder.getTopkFrequenciesPrevious();
 	i = 0;
-	for (auto curr : currentFrequencies)
+	for (auto curr : current_frequencies)
 	{
-		previousFrequencies[i].setFrequency(curr.getFrequency());
-		previousFrequencies[i].setRank(curr.getRank());
-		previousFrequencies[i].setValue(curr.getValue());
-		previousFrequencies[i].setPayload(curr.getPayload());
+		previous_frequencies[i].setFrequency(curr.getFrequency());
+		previous_frequencies[i].setRank(curr.getRank());
+		previous_frequencies[i].setValue(curr.getValue());
+		previous_frequencies[i].setPayload(curr.getPayload());
 		i++;
 	}
 	auto currentValues = builder.getTopkValues();
@@ -775,8 +775,8 @@ void *consumer(void *arg)
     {
         pthread_mutex_lock(&lock);
         //data->sketch->snapshot(); // Update the timestamp of the sketch to "now".
-        capnp::MallocMessageBuilder newBuilder;
-        CountMinSketch previous(*data->sketch, newBuilder);
+        capnp::MallocMessageBuilder new_builder;
+        CountMinSketch previous(*data->sketch, new_builder);
         cout << "1001" << endl;
         cout.flush();
         pthread_mutex_unlock(&lock);
@@ -787,7 +787,7 @@ void *consumer(void *arg)
         pthread_mutex_lock(&lock);
         cout << *data->sketch;
         data->sketch->compare(previous);
-        data->sketch->showComparison();
+        data->sketch->show_comparison();
         cout.flush();
         pthread_mutex_unlock(&lock);
     }
@@ -808,7 +808,7 @@ void *consumer(void *arg)
 		//cout << "\033c"; // HACK: Non-portable way to clear the terminal.  Sorry!
 		pthread_mutex_lock(&mtx);
 		cout << *data->sketch;
-		data->sketch->showComparison();
+		data->sketch->show_comparison();
 		cout.flush();
 		data->sketch->snapshot(); // Update the timestamp of the sketch to "now".
 		pthread_mutex_unlock(&mtx);
@@ -826,8 +826,8 @@ void *consumer(void *arg)
 //     {
 //         pthread_mutex_lock(&lock);
 //         data->sketch->snapshot(); // Update the timestamp of the sketch to "now".
-//         //capnp::MallocMessageBuilder newBuilder;
-//         //CountMinSketch previous(*data->sketch, newBuilder);
+//         //capnp::MallocMessageBuilder new_builder;
+//         //CountMinSketch previous(*data->sketch, new_builder);
 //         //data->sketch->compare(previous);
 //         pthread_mutex_unlock(&lock);
 
@@ -836,7 +836,7 @@ void *consumer(void *arg)
 //         cout << "\033c"; // HACK: Non-portable way to clear the terminal.  Sorry!
 //         pthread_mutex_lock(&lock);
 //         cout << *data->sketch;
-//         data->sketch->showComparison();
+//         data->sketch->show_comparison();
 //         cout.flush();
 //         pthread_mutex_unlock(&lock);
 //     }
@@ -849,19 +849,19 @@ void test_threads()
 	const auto usageType = UsageType::TOPK;
 	const auto delta = 0.001;
 	const auto epsilon = 0.03;
-	const auto point_V = 0;
-	const auto topk_K = 20;
-	const auto heavy_F = 0;
+	const auto point_v = 0;
+	const auto topk_k = 20;
+	const auto heavy_f = 0;
 	const auto seed = time(0); // 1549994987;
 
-	CountMinSketch sketch(usageType, delta, epsilon, point_V, topk_K, heavy_F, seed);
+	CountMinSketch sketch(usageType, delta, epsilon, point_v, topk_k, heavy_f, seed);
 	cout << sketch;
 
 	/*
     {
         readData(sketch);
-        capnp::MallocMessageBuilder newBuilder;
-        CountMinSketch other(sketch, newBuilder);
+        capnp::MallocMessageBuilder new_builder;
+        CountMinSketch other(sketch, new_builder);
         cout << other << endl;
         cout << "0---------------------------------------------------------------------------------------------------" << endl;
         readData(sketch);
