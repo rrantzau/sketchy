@@ -15,7 +15,7 @@ Install Cap'n Proto on your platform according to [these instructions](https://c
 
 ## Top-k items - [The Count-min sketch (CMS)](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch)
 
-*What are the top-k most frequent itmes right now, and how do they rankings change over time?*
+*What are the top-k most frequent items right now, and how do they rankings change over time?*
 
     cd src/cms
     make
