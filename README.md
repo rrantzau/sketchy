@@ -9,6 +9,10 @@ The sketches are implemented in C++ using [Cap'n Proto](https://capnproto.org).
 
 The code was tested on MacOS and Ubuntu.
 
+## Prerequisites
+
+Install Cap'n Proto on your platform according to [these instructions](https://capnproto.org/install.html).  I usually build it from source.
+
 ## Top-k items - [The Count-min sketch (CMS)](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch)
 
 *What are the top-k most frequent itmes right now, and how do they rankings change over time?*
