@@ -26,14 +26,14 @@ $(DEMO): $(DEMO).o $(HLL).o util.o $(HLL).capnp.h
 $(HLL): $(HLL).capnp.h $(HLL).o util.o
 	$(CXX) -o $(HLL) $(HLL).o util.o $(LD_FLAGS) -D_REENTRANT -lpthread -Llibcount libcount/libcount.a
 
-$(DEMO).o: $(DEMO).cpp $(HLL).h $(HLL).capnp.h
-	$(CXX) -c $(DEMO).cpp $(CC_FLAGS) -Ilibcount/include
+$(DEMO).o: $(DEMO).cc $(HLL).h $(HLL).capnp.h
+	$(CXX) -c $(DEMO).cc $(CC_FLAGS) -Ilibcount/include
 
-$(HLL).o: libcount/libcount.a $(HLL).cpp $(HLL).h $(HLL).capnp.h
-	$(CXX) -c $(HLL).cpp $(CC_FLAGS) -Ilibcount/include
+$(HLL).o: libcount/libcount.a $(HLL).cc $(HLL).h $(HLL).capnp.h
+	$(CXX) -c $(HLL).cc $(CC_FLAGS) -Ilibcount/include
 
-util.o: util.cpp util.h
-	$(CXX) -c util.cpp $(CC_FLAGS)
+util.o: util.cc util.h
+	$(CXX) -c util.cc $(CC_FLAGS)
 
 $(HLL).capnp.h:
 	capnp compile -oc++ --src-prefix=. ./$(HLL).capnp

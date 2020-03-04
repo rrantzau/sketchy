@@ -26,8 +26,8 @@ $(CMS).capnp.h:
 $(CMS).capnp.o:
 	$(CXX) -c $(CMS).capnp.c++ $(CC_FLAGS)
 
-$(CMS).o: $(CMS).cpp $(CMS).h $(CMS).capnp.h
-	$(CXX) -c $(CMS).cpp $(CC_FLAGS)
+$(CMS).o: $(CMS).cc $(CMS).h $(CMS).capnp.h
+	$(CXX) -c $(CMS).cc $(CC_FLAGS)
 
 $(CMS): $(CMS).o $(CMS).capnp.h
 	$(CXX) -o $(CMS) $(CMS).o $(LD_FLAGS) -D_REENTRANT -lpthread 
